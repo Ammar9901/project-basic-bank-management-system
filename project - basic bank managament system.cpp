@@ -26,14 +26,14 @@ enum enMainScreenChoices { showClients = 1, add, Delete, updateClientInfo, findC
 
 enum enUpdateClientChoices { PIN = 1, name, phone, ExitFromUpdate };
 
-enum enTransactions { edeposit = 1, ewithdraw, etotalBalances, ExitFromTransactions };
+enum enTransactions { edeposit = 1, ewithdraw , etransfer, etotalBalances, ExitFromTransactions };
 
 void saveVectorToFile(const vector<AccountData>& accounts, string fileName);
 
-bool findClientByAccountNumber(string accountNumber, vector<AccountData>& accounts, AccountData*& account)
+bool findClientByAccountNumber(string accountNumber,  vector<AccountData>& accounts, AccountData*& account)
 {
 
-    for (AccountData& ad : accounts)
+    for ( AccountData& ad : accounts)
     {
 
         if (accountNumber == ad.accountNumber)
@@ -50,7 +50,7 @@ bool findClientByAccountNumber(string accountNumber, vector<AccountData>& accoun
 bool findClientByAccountNumber(string accountNumber, const vector<AccountData>& accounts)
 {
 
-    for (const AccountData& ad : accounts)
+    for ( const AccountData &ad : accounts)
     {
 
         if (accountNumber == ad.accountNumber)
@@ -440,9 +440,8 @@ enTransactions getTransactionsUserChoice()
 
 }
 
-void performDeposit(AccountData& account, double amount)
+void performDeposit(AccountData& account , double amount)
 {
-
 
 
 
@@ -468,13 +467,12 @@ void deposit(vector<AccountData>& accounts)
     {
         showClientCard(*account);
 
-
-        double amount = inputs::readPositiveDoubleNumber("Amount to Deposit: ");
+        double amount = inputs::readPositiveDoubleNumber("Amount To Deposit: ");
 
         char c = inputs::readChar("Are You Sure You want To Perform The Deposit On This Account? Y / N\n");
 
         if (tolower(c) == 'y') {
-            performDeposit(*account, amount);
+            performDeposit(*account,amount);
 
             cout << "=====================================================================\n";
             cout << " The Deposit Compeleted Sccssfully  , The Balance is: " << account->balance << endl;
@@ -496,8 +494,18 @@ void deposit(vector<AccountData>& accounts)
 
 }
 
-void performWithdraw(AccountData& account, double amount)
+void performWithdraw(AccountData& account , double amount)
 {
+    
+    while (amount > account.balance){
+       
+        
+        
+            cout << "Amount Exceeds The Balance , you can withdraw up to: " << account.balance << endl;
+            amount = inputs::readPositiveDoubleNumber("Amount To Withdraw: ");
+            
+
+    }
 
     account.balance -= amount;
 
@@ -518,21 +526,14 @@ void withdraw(vector<AccountData>& accounts)
     {
 
         showClientCard(*account);
+       
         double amount = inputs::readPositiveDoubleNumber("Amount To Withdraw: ");
-
-        while (amount > account->balance)
-        {
-
-            cout << "Amount Exceeds The Balance , you can withdraw up to: " << account->balance << endl;
-            amount = inputs::readPositiveDoubleNumber("Enter Another Amount To withdraw: ");
-        }
 
         char c = inputs::readChar("Are You Sure You want To Perform Withdraw on this account? Y / N\n");
 
         if (tolower(c) == 'y')
         {
-
-            performWithdraw(*account, amount);
+            performWithdraw(*account , amount);
             cout << "=====================================================================\n";
             cout << " The Withdraw Compeleted Sccssfully  , The Balance is: " << account->balance << endl;
             cout << "=====================================================================\n";
@@ -558,18 +559,94 @@ void showTransactionsMenu()
     cout << "--------------------------\n";
     cout << " [1] Deposit.\n";
     cout << " [2] Withdraw.\n";
-    cout << " [3] Show All Balances.\n";
-    cout << " [4] Return to The Main Menu.\n";
+    cout << " [3] Transfer.\n";
+    cout << " [4] Show All Balances.\n";
+    cout << " [5] Return to The Main Menu.\n";
 
 
 
 }
 
+string readAccountNumber(string message,vector<AccountData>&accounts , AccountData* &account)
+{
+
+    string accountNumber;
+    bool founded;
+    do {
+        accountNumber = inputs::readText_emptyNotAllowed(message);
+        founded = findClientByAccountNumber(accountNumber, accounts , account);
+
+        if (!founded)
+            printAccountNotFound(accountNumber);
+
+    } while (!founded);
+
+    
+
+    return accountNumber;
+
+
+}
+
+void performTransfer(AccountData &sender , AccountData &reciver , double amount)
+{
+
+    performWithdraw(sender, amount);
+    performDeposit(reciver, amount);
+
+
+}
+
+void showTransferScreenHead()
+{
+
+    cout << "----------------------------\n";
+    cout << "       Transfer Screen\n";
+    cout << "----------------------------\n";
+
+
+}
+
+void transfer(vector<AccountData> &accounts)
+{
+    system("cls");
+
+    showTransferScreenHead();
+    
+    AccountData* sender ,* reciver;
+
+    string reciverNumber = readAccountNumber("Enter The Reciver Account Number: ",accounts , reciver);
+    string senderNumber = readAccountNumber("Enter The Sender Account Number:",accounts , sender);
+
+    system("cls");
+    showTransferScreenHead();
+
+    cout << "The Reciver Client:\n";
+    showClientCard(*reciver);
+    cout << "\nThe Sender Client:\n";
+     showClientCard(*sender);
+    
+    double amount = inputs::readPositiveDoubleNumber("Amount To Transfer: ");
+
+    char c = inputs::readChar("\nAre You Sure You Want To perform This operation? Y / N\n");
+
+    if (tolower(c) == 'y') {
+        performTransfer(*sender, *reciver, amount);
+
+        cout << "=========================================================\n";
+        cout << " Transferred Sccssfully !\n(" << sender->accountNumber << ") Balance is : " << sender->balance << endl;
+        cout << "\n(" << reciver->accountNumber << ") Balance is : " << reciver->balance << endl;
+        cout << "=========================================================\n";
+        saveVectorToFile(accounts, "Records");
+        system("pause");
+    }
+
+}
 
 void showAllBalances(vector<AccountData>& accounts)
 {
     system("cls");
-    double sum = 0;
+   long double sum = 0;
     cout << "\n\t\t\t\t\Balances List (" << accounts.size() << ") Client(s).\n";
     cout << "\n_______________________________________________________________________________________\n\n";
 
@@ -610,13 +687,14 @@ void transactions(vector<AccountData>& accounts)
         case edeposit:deposit(accounts); break;
         case ewithdraw:withdraw(accounts); break;
         case etotalBalances:showAllBalances(accounts); break;
+        case etransfer:transfer(accounts); break;
         case ExitFromTransactions:return;
 
 
         }
 
 
-    } while (userChoice != 4);
+    } while (userChoice != 5);
 
 
 
