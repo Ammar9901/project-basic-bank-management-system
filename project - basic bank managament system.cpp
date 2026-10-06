@@ -1786,7 +1786,7 @@ void logInScreen()
     
         do {
            
-            userLoaded = false;
+            
             system("cls");
             cout << "---------------------\n";
             cout << "    LogIn Screen\n";
@@ -1794,16 +1794,6 @@ void logInScreen()
 
             cout << "Enter The Username: ";
             getline(cin, username);
-            if (!findUserByUsername(username))
-            {
-                cout << "User with that Username hasn't been found.\n";
-                cout << "Press any key to Retry.\n";
-                std::system("pause >0");
-                
-                continue;
-            }
-
-
             cout << "Enter The Password: ";
             getline(cin, password);
             userLoaded = loadUserData(username, password, currentUser);
